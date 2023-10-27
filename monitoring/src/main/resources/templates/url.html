@@ -1,0 +1,145 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>URL Monitoring</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<body>
+<div class="grid">
+    <div class="g-col-12">
+        <table id="urlTable" class="table table-dark table-striped">
+            <thead>
+            <tr>
+                <th scope="col">URL</th>
+                <th scope="col">Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr id="index-status">
+                <td id="index">http://localhost:8080/</td>
+                <td></td>
+            </tr>
+            <tr id="not_existing-status">
+                <td id="not_existing">http://localhost:8080/not_existing</td>
+                <td></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<form id="urlForm">
+    <div class="form-group">
+        <label for="urlInput">Add URL to monitor:</label>
+        <input type="url" name="urlName" class="form-control" id="urlInput" aria-describedby="urlHelp" placeholder="Enter URL">
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>
+<p> Next sync in <span id="timer"></span> seconds</p>
+
+
+<script>
+
+    function getCurrentTime(){
+        const currentdate = new Date();
+        const datetime = "Last Sync: " + currentdate.getDate() + "/"
+            + (currentdate.getMonth() + 1) + "/"
+            + currentdate.getFullYear() + " @ "
+            + currentdate.getHours() + ":"
+            + currentdate.getMinutes() + ":"
+            + currentdate.getSeconds();
+        return datetime
+    }
+    async function getStatus(url, cell) {
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.onreadystatechange = function () {
+            const datetime = getCurrentTime()
+            const timestamp = ' (' + datetime + ')'
+            if (request.readyState === 4) {
+                let statusCode = request.status.toString()
+                if (request.status === 404) {
+                    cell.innerText = statusCode + '-Unreachable' + timestamp
+                    cell.style.backgroundColor = "red";
+                }
+                else if (request.status === 0) {
+                    cell.innerText = statusCode + '-No Response' + timestamp
+                    cell.style.backgroundColor = "black";
+                }
+                else {
+                    cell.innerText = statusCode + '-Reachable' + timestamp
+                    cell.style.backgroundColor = "green";
+                }
+            }
+        };
+        request.send();
+    }
+
+    function setHtml(targetC, htmldata) {
+        const theDiv = document.getElementById(targetC);
+        theDiv.innerHTML = htmldata;
+    }
+
+    function getAllStatuses() {
+        let rows = document.getElementById("urlTable").rows;
+        let i = 1;
+
+        while (i < rows.length) {
+            let row = rows[i];
+            let url = row.cells[0].innerHTML
+            let cell = row.cells[1]
+            getStatus(url, cell);
+            i++;
+        }
+    }
+
+    function addRow(url) {
+        // Get the table element in which you want to add row
+        let table = document.getElementById("urlTable");
+
+        // Create a row using the inserRow() method and
+        // specify the index where you want to add the row
+        let row = table.insertRow(-1); // Adding at the end
+
+        // Create table cells
+        let c1 = row.insertCell(0);
+        let c2 = row.insertCell(1);
+
+        // Add data to c1 and c2
+        c1.innerText = url
+        getStatus(url, c2)
+    }
+
+    let urlForm = document.getElementById("urlForm");
+
+    urlForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        let urlInput = document.getElementById("urlInput").value ;
+
+        if (urlInput == "") {
+            // do nothing
+        } else {
+            addRow(urlInput)
+        }
+    });
+
+    getAllStatuses()
+
+    let timer = 10;
+    setHtml('timer', timer);
+
+    const intervalId = window.setInterval(function () {
+        timer = timer - 1;
+        if (timer == 0) {
+            getAllStatuses()
+            timer = 10
+        }
+        setHtml('timer', timer);
+    }, 1000);
+
+
+</script>
+
+</body>
+</html>
