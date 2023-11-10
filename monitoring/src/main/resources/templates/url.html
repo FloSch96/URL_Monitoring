@@ -50,29 +50,38 @@
             + currentdate.getSeconds();
         return datetime
     }
-    async function getStatus(url, cell) {
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true);
-        request.onreadystatechange = function () {
-            const datetime = getCurrentTime()
-            const timestamp = ' (' + datetime + ')'
-            if (request.readyState === 4) {
-                let statusCode = request.status.toString()
-                if (request.status === 404) {
-                    cell.innerText = statusCode + '-Unreachable' + timestamp
-                    cell.style.backgroundColor = "red";
-                }
-                else if (request.status === 0) {
-                    cell.innerText = statusCode + '-No Response' + timestamp
-                    cell.style.backgroundColor = "black";
-                }
-                else {
-                    cell.innerText = statusCode + '-Reachable' + timestamp
-                    cell.style.backgroundColor = "green";
-                }
-            }
-        };
-        request.send();
+
+    function getStatusNew(urlName, cell) {
+        const datetime = getCurrentTime();
+        const timestamp = ' (' + datetime + ')';
+        //const sendFromJavascript = () => {
+
+            fetch("http://localhost:8080/addUrl",{
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body: JSON.stringify({"urlName": urlName})
+            }).then((response) => {
+                response.json().then(data => {
+                    console.log(data);
+                    let statusCode = data.status;
+                    if (statusCode === 404) {
+                        cell.innerText = statusCode + '-Unreachable' + timestamp;
+                        cell.style.backgroundColor = "red";
+                    }
+                    else if (statusCode === 200) {
+                        cell.innerText = statusCode + '-Reachable' + timestamp;
+                        cell.style.backgroundColor = "green";
+                    }
+                    else {
+                        cell.innerText = statusCode + timestamp;
+                        cell.style.backgroundColor = "black";
+                    }
+                });
+            }).catch(err => {
+                console.log("Something went wrong");
+                console.log(err);
+            });
+        //}
     }
 
     function setHtml(targetC, htmldata) {
@@ -86,9 +95,9 @@
 
         while (i < rows.length) {
             let row = rows[i];
-            let url = row.cells[0].innerHTML
-            let cell = row.cells[1]
-            getStatus(url, cell);
+            let url = row.cells[0].innerHTML;
+            let cell = row.cells[1];
+            getStatusNew(url, cell);
             i++;
         }
     }
@@ -106,8 +115,8 @@
         let c2 = row.insertCell(1);
 
         // Add data to c1 and c2
-        c1.innerText = url
-        getStatus(url, c2)
+        c1.innerText = url;
+        getStatusNew(url, c2);
     }
 
     let urlForm = document.getElementById("urlForm");
@@ -120,11 +129,15 @@
         if (urlInput == "") {
             // do nothing
         } else {
-            addRow(urlInput)
+            addRow(urlInput);
+            document.getElementById("urlInput").value = "";
         }
     });
 
-    getAllStatuses()
+    getAllStatuses();
+
+
+
 
     let timer = 10;
     setHtml('timer', timer);
